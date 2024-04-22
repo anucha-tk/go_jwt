@@ -15,3 +15,10 @@ precommit.rehooks:
 ci.lint:
 	@echo "== 🙆 ci.linter =="
 	golangci-lint run -v ./... --fix
+
+postgres-start:
+	docker compose up -d
+postgres-stop:
+	docker compose up -d
+postgres-down:
+	docker compose up -d
