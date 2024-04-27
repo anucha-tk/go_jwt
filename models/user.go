@@ -29,6 +29,26 @@ type SinginInput struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
+type UserResponse struct {
+	ID        uint      `json:"id,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	Email     string    `json:"email,omitempty"`
+	Age       int       `json:"age,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func FilterUserRecord(user *User) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Age:       user.Age,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+}
+
 var validate = validator.New()
 
 type ErrorResponse struct {
