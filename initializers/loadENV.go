@@ -2,6 +2,7 @@ package initializers
 
 import (
 	"log"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -14,11 +15,8 @@ type Config struct {
 	DatabasePassword string `mapstructure:"DATABASE_PASSWORD"`
 	DatabaseName     string `mapstructure:"DATABASE_NAME"`
 
-	// JwtSecret    string        `mapstructure:"JWT_SECRET"`
-	// JwtExpiresIn time.Duration `mapstructure:"JWT_EXPIRED_IN"`
-	// JwtMaxAge    int           `mapstructure:"JWT_MAXAGE"`
-	//
-	// ClientOrigin string `mapstructure:"CLIENT_ORIGIN"`
+	JwtSecret    string        `mapstructure:"JWT_SECRET"`
+	JwtExpiresIn time.Duration `mapstructure:"JWT_EXPIRED_IN"`
 }
 
 func LoadENV() {
