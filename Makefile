@@ -19,6 +19,6 @@ ci.lint:
 postgres-start:
 	docker compose up -d
 postgres-stop:
-	docker compose up -d
+	docker compose stop
 postgres-down:
-	docker compose up -d
+	docker compose down

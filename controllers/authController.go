@@ -1,49 +1,88 @@
 package controllers
 
 import (
-	"log"
+	"strings"
 
 	"github.com/anucha-tk/go_jwt/common"
-	"github.com/anucha-tk/go_jwt/database"
+	"github.com/anucha-tk/go_jwt/initializers"
 	"github.com/anucha-tk/go_jwt/models"
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Hello(c *fiber.Ctx) error {
-	return c.SendString("ready")
-}
-
-type User struct {
-	Name     string `json:"name" validate:"required,min=3,max=20"`
-	Email    string `json:"email" validate:"required,email"`
-	Passowrd string `json:"password" validate:"required"`
-	Age      int    `json:"age"`
-}
-
 func Register(c *fiber.Ctx) error {
-	body := new(User)
-	err := c.BodyParser(body)
+	payload := new(models.SignupInput)
+
+	err := c.BodyParser(&payload)
 	if err != nil {
-		return err
+		return common.ResponseError(c, fiber.StatusBadRequest, "Error Body Parser", err)
 	}
-	// Validate request body
-	validate := validator.New()
-	if err := validate.Struct(body); err != nil {
-		return common.ResponseError(c, 422, "error", err.Error())
+	errors := models.ValidateStruct(payload)
+	if errors != nil {
+		return common.ResponseError(c, fiber.StatusUnprocessableEntity, "Error invalid body", errors)
 	}
-	password, err := bcrypt.GenerateFromPassword([]byte(body.Passowrd), 14)
+	if payload.Password != payload.PasswordConfirm {
+		return common.ResponseErrorMsg(c, fiber.StatusUnprocessableEntity, "Error password and passowrdConfirm not match")
+	}
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatalf("Error bcrypt password: %v", err)
+		return common.ResponseErrorMsg(c, fiber.StatusInternalServerError, "Error generate hash password")
+	}
+	var existUser models.User
+
+	nameExist := initializers.DB.Where("name = ?", payload.Name).First(&existUser)
+	if nameExist.RowsAffected > 0 {
+		return common.ResponseMsg(c, fiber.StatusConflict, "Error: Name already exist")
+	}
+	emailExist := initializers.DB.Where("email = ?", payload.Email).First(&existUser)
+	if emailExist.RowsAffected > 0 {
+		return common.ResponseMsg(c, fiber.StatusConflict, "Error: Email already exist")
 	}
 	user := models.User{
-		Name:     body.Name,
-		Email:    body.Email,
-		Password: string(password),
-		Age:      body.Age,
+		Name:     payload.Name,
+		Email:    payload.Email,
+		Password: string(hashPassword),
+		Age:      payload.Age,
 	}
-	database.DB.Create(&user)
-	// TODO: if error eg. duplication return bad request 400
+	result := initializers.DB.Create(&user)
+	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
+		return common.ResponseMsg(c, fiber.StatusConflict, "Error name or email Exist")
+	} else if result.Error != nil {
+		return common.Response(c, fiber.StatusInternalServerError, "Something went wrong", result.Error.Error())
+	}
 	return common.Response(c, 200, "Create User successful", user)
 }
+
+// var secretKey = []byte("secret-key")
+
+// func Login(c *fiber.Ctx) error {
+// 	body := new(LoginBody)
+// 	err := c.BodyParser(&body)
+// 	if err != nil {
+// 		return common.ResponseError(c, fiber.StatusInternalServerError, "error", err.Error())
+// 	}
+// 	validate := validator.New()
+// 	if err := validate.Struct(body); err != nil {
+// 		return common.ResponseError(c, fiber.StatusUnprocessableEntity, "error", err.Error())
+// 	}
+// var user models.User
+// initialzers.DB.Where("email = ?", body.Email).First(&user)
+// if user.ID == 0 {
+// 	return common.ResponseErrorMsg(c, fiber.StatusNotFound, "User not found")
+// }
+// err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Passowrd))
+// if err != nil {
+// 	return common.ResponseErrorMsg(c, fiber.StatusBadRequest, "Invalid password")
+// }
+// token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+// 	jwt.MapClaims{
+// 		"iss": user.ID,
+// 		"exp": time.Now().Add(time.Hour * 24).Unix(), // 1 Day
+// 	})
+// tokenString, err := token.SignedString([]byte(secretKey))
+// if err != nil {
+// 	return common.ResponseErrorMsg(c, fiber.StatusInternalServerError, "could't not login")
+// }
+//
+// 	return common.Response(c, fiber.StatusOK, "Login success", "")
+// }

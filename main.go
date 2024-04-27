@@ -2,28 +2,28 @@ package main
 
 import (
 	"log"
-	"os"
 
-	"github.com/anucha-tk/go_jwt/database"
+	"github.com/anucha-tk/go_jwt/initializers"
 	"github.com/anucha-tk/go_jwt/routes"
-	"github.com/anucha-tk/go_jwt/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func main() {
-	utils.LoadENV()
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatal("PORT not found")
-	}
-	database.Connect()
-
-	app := fiber.New()
-	app.Use(logger.New())
-	routes.Setup(app)
-	err := app.Listen(":" + port)
+func init() {
+	config, err := initializers.LoadConfig(".")
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalln("Failed to load environment variables! \n", err.Error())
+	}
+	initializers.Connect(&config)
+}
+
+func main() {
+	app := fiber.New()
+	v1 := app.Group("/api/v1")
+	app.Use(logger.New())
+	routes.Setup(v1)
+	err := app.Listen("localhost:" + "5000")
+	if err != nil {
+		log.Fatalf("Server error: %v", err)
 	}
 }

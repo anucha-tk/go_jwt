@@ -5,7 +5,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Setup(app *fiber.App) {
-	app.Get("/", controllers.Hello)
-	app.Post("/register", controllers.Register)
+func Setup(router fiber.Router) {
+	router.Get("/healthchecker", controllers.HealthChecker)
+	router.Post("/register", controllers.Register)
+	// router.Post("/login", controllers.Login)
+	router.All("*", controllers.Notfound)
 }
